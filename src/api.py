@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 import requests
 
@@ -20,7 +21,7 @@ class HeadHunterAPI(API):
     def __init__(self, keyword, city_id):
         self.params = {
             'text': keyword,
-            'per_page': 100,
+            'per_page': 1,
             'area': city_id,
             'only_with_salary': True
         }
@@ -34,7 +35,26 @@ class HeadHunterAPI(API):
 
     def get_vacancies(self):
         data = requests.get(self.HH_API_URL, self.params).json()['items']
-        return data
+        # ниже полностью черновой вариант, обрабатываю какие данные взять для парсинга и что делать 'salary' (чтоб не
+        # было None)
+        vacancies = []
+        if len(data) == 0:
+            print('По вашему запросу вакансии не найдены.')
+        else:
+            print(f'По Вашему запросу найдено {len(data)} вакансий')
+            for vacancy in data:
+                published_at = datetime.strptime(vacancy['published_at'], "%Y-%m-%dT%H:%M:%S%z")
+                vacancy_info = {
+                    'name': vacancy['name'],
+                    # 'salary_ot': vacancy['salary']['from'], #if vacancy.get('salary') else None,
+                    # 'salary_do': vacancy['salary']['to'], #if vacancy.get('salary') else None,
+                    'salary' : vacancy['salary'],
+                    'responsibility': vacancy['snippet']['responsibility'],
+                    'requirement' : vacancy['snippet']['requirement'],
+                    'data': published_at.strftime("%d.%m.%Y")
+                }
+                vacancies.append(vacancy_info)
+        return vacancies
 
 
 class SuperJobAPI(API):
